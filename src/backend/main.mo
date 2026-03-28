@@ -1,19 +1,37 @@
 import Map "mo:core/Map";
 import Set "mo:core/Set";
+import Iter "mo:core/Iter";
 import Array "mo:core/Array";
 import Time "mo:core/Time";
 import Runtime "mo:core/Runtime";
+import Text "mo:core/Text";
 import Principal "mo:core/Principal";
 import Nat "mo:core/Nat";
-import Text "mo:core/Text";
-import Iter "mo:core/Iter";
 import Order "mo:core/Order";
+
+import OutCall "http-outcalls/outcall";
+import Stripe "stripe/stripe";
 import Authorization "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
+
 
 actor {
   let accessControlState = Authorization.initState();
   include MixinAuthorization(accessControlState);
+
+  // Backup admin code - use this if the platform token does not work
+  let BACKUP_ADMIN_CODE : Text = "ZEEEP2024ADMIN";
+
+  public shared ({ caller }) func claimAdminWithBackupCode(code : Text) : async Bool {
+    if (caller.isAnonymous()) { return false };
+    if (accessControlState.adminAssigned) { return false };
+    if (code == BACKUP_ADMIN_CODE) {
+      accessControlState.userRoles.add(caller, #admin);
+      accessControlState.adminAssigned := true;
+      return true;
+    };
+    return false;
+  };
 
   // User Profile Type
   public type UserProfile = {
@@ -25,7 +43,7 @@ actor {
   let userProfiles = Map.empty<Principal, UserProfile>();
 
   // Product Types
-  type Product = {
+  public type Product = {
     id : Nat;
     name : Text;
     description : Text;
@@ -44,7 +62,7 @@ actor {
   };
 
   // Order Types
-  type OrderItem = {
+  public type OrderItem = {
     productId : Nat;
     productName : Text;
     quantity : Nat;
@@ -52,7 +70,7 @@ actor {
     size : Text;
   };
 
-  type OrderType = {
+  public type OrderType = {
     id : Nat;
     customerName : Text;
     customerEmail : Text;
@@ -69,6 +87,8 @@ actor {
     stripePaymentIntentId : Text;
     createdAt : Int;
     orderNumber : Nat;
+    ownerPrincipal : Text;
+    trackingNumber : Text;
   };
 
   module OrderType {
@@ -78,7 +98,7 @@ actor {
   };
 
   // Customer Types
-  type Customer = {
+  public type Customer = {
     name : Text;
     email : Text;
     phone : Text;
@@ -91,7 +111,7 @@ actor {
 
   // Identifiers
   var nextProductId = 30;
-  var nextOrderId = 1;
+  var nextOrderId = 1 : Nat;
   let products = Map.empty<Nat, Product>();
   let orders = Map.empty<Nat, OrderType>();
 
@@ -182,6 +202,8 @@ actor {
       createdAt = Time.now();
       status = "Pending";
       orderNumber = nextOrderId;
+      ownerPrincipal = caller.toText();
+      trackingNumber = "";
     };
     orders.add(nextOrderId, newOrder);
     let orderId = nextOrderId;
@@ -190,7 +212,30 @@ actor {
   };
 
   public query ({ caller }) func getOrderById(id : Nat) : async ?OrderType {
+    if (not Authorization.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admins can view orders by ID");
+    };
     orders.get(id);
+  };
+
+  public query ({ caller }) func getMyOrders() : async [OrderType] {
+    let callerPrincipal = caller.toText();
+    orders.values().toArray().filter(
+      func(order) {
+        order.ownerPrincipal == callerPrincipal;
+      }
+    ).sort();
+  };
+
+  public query ({ caller }) func getOrderByIdAndPhone(id : Nat, phone : Text) : async ?OrderType {
+    switch (orders.get(id)) {
+      case (null) { null };
+      case (?order) {
+        if (order.customerPhone == phone) {
+          ?order;
+        } else { null };
+      };
+    };
   };
 
   public query ({ caller }) func getAllOrders() : async [OrderType] {
@@ -222,6 +267,21 @@ actor {
     let updatedOrder = {
       existingOrder with
       status = newStatus;
+    };
+    orders.add(orderId, updatedOrder);
+  };
+
+  public shared ({ caller }) func updateOrderTracking(orderId : Nat, trackingNumber : Text) : async () {
+    if (not Authorization.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admins can update order tracking");
+    };
+    let existingOrder = switch (orders.get(orderId)) {
+      case (null) { Runtime.trap("Order not found") };
+      case (?order) { order };
+    };
+    let updatedOrder = {
+      existingOrder with
+      trackingNumber;
     };
     orders.add(orderId, updatedOrder);
   };
@@ -279,6 +339,58 @@ actor {
 
   public query func getUpiId() : async Text {
     upiId;
+  };
+
+  // Contact Info
+  var contactWhatsapp : Text = "9769447954";
+  var contactEmail : Text = "abhishekrathi0710@gmail.com";
+
+  public query func getContactInfo() : async { whatsapp : Text; email : Text } {
+    { whatsapp = contactWhatsapp; email = contactEmail };
+  };
+
+  public shared ({ caller }) func setContactInfo(whatsapp : Text, email : Text) : async () {
+    if (not (Authorization.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can perform this action");
+    };
+    contactWhatsapp := whatsapp;
+    contactEmail := email;
+  };
+
+  // STRIPE
+  var stripeWithPayment : ?Stripe.StripeConfiguration = null;
+
+  public query func isStripeConfigured() : async Bool {
+    switch (stripeWithPayment) {
+      case (null) { false };
+      case (_) { true };
+    };
+  };
+
+  public shared ({ caller }) func setStripeConfiguration(config : Stripe.StripeConfiguration) : async () {
+    if (not (Authorization.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can perform this action");
+    };
+    stripeWithPayment := ?config;
+  };
+
+  public func getStripeSessionStatus(sessionId : Text) : async Stripe.StripeSessionStatus {
+    await Stripe.getSessionStatus(await getStripeConfiguration(), sessionId, transform);
+  };
+
+  public shared ({ caller }) func createCheckoutSession(items : [Stripe.ShoppingItem], successUrl : Text, cancelUrl : Text) : async Text {
+    await Stripe.createCheckoutSession(await getStripeConfiguration(), caller, items, successUrl, cancelUrl, transform);
+  };
+
+  public query func transform(input : OutCall.TransformationInput) : async OutCall.TransformationOutput {
+    OutCall.transform(input);
+  };
+
+  func getStripeConfiguration() : async Stripe.StripeConfiguration {
+    switch (stripeWithPayment) {
+      case (null) { Runtime.trap("Stripe needs to be first configured") };
+      case (?config) { config };
+    };
   };
 
   // Pre-seed products

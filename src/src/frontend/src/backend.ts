@@ -203,6 +203,7 @@ export interface backendInterface {
     getRazorpayKeyId(): Promise<string>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
+    claimAdminWithBackupCode(code: string): Promise<boolean>;
     isPaymentConfigured(): Promise<boolean>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     setRazorpayKeyId(keyId: string): Promise<void>;
@@ -447,6 +448,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.isCallerAdmin();
+            return result;
+        }
+    }
+    async claimAdminWithBackupCode(arg0: string): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.claimAdminWithBackupCode(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.claimAdminWithBackupCode(arg0);
             return result;
         }
     }

@@ -10,6 +10,11 @@ export default function AdminSettings() {
   const [upiId, setUpiId] = useState("");
   const [saved, setSaved] = useState(false);
 
+  // Contact info state
+  const [whatsapp, setWhatsapp] = useState("");
+  const [supportEmail, setSupportEmail] = useState("");
+  const [contactSaved, setContactSaved] = useState(false);
+
   const { data: isConfigured } = useQuery({
     queryKey: ["payment-configured"],
     queryFn: () => actor!.isPaymentConfigured(),
@@ -19,7 +24,6 @@ export default function AdminSettings() {
   useQuery({
     queryKey: ["upi-id-admin"],
     queryFn: async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const id = await actor!.getUpiId();
       if (id) setUpiId(id);
       return id;
@@ -27,14 +31,39 @@ export default function AdminSettings() {
     enabled: !!actor,
   });
 
+  useQuery({
+    queryKey: ["contact-info-admin"],
+    queryFn: async () => {
+      const info = await (actor!.getContactInfo() as Promise<{
+        whatsapp: string;
+        email: string;
+      }>);
+      if (info) {
+        if (info.whatsapp) setWhatsapp(info.whatsapp);
+        if (info.email) setSupportEmail(info.email);
+      }
+      return info;
+    },
+    enabled: !!actor,
+  });
+
   const saveMutation = useMutation({
     mutationFn: async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await actor!.setUpiId(upiId);
     },
     onSuccess: () => {
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
+    },
+  });
+
+  const saveContactMutation = useMutation({
+    mutationFn: async () => {
+      await (actor!.setContactInfo(whatsapp, supportEmail) as Promise<void>);
+    },
+    onSuccess: () => {
+      setContactSaved(true);
+      setTimeout(() => setContactSaved(false), 2000);
     },
   });
 
@@ -78,6 +107,53 @@ export default function AdminSettings() {
               ? "Saving..."
               : "Save Configuration"}
         </Button>
+      </div>
+
+      {/* Support Contact Info Section */}
+      <div className="border-t pt-5">
+        <h2 className="text-lg font-semibold mb-1">Support Contact Info</h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          These details will be shown to customers on the payment page so they
+          can reach you for any payment/order issues.
+        </p>
+        <div className="space-y-3">
+          <div>
+            <Label>WhatsApp Number</Label>
+            <Input
+              type="text"
+              data-ocid="settings.input"
+              value={whatsapp}
+              onChange={(e) => setWhatsapp(e.target.value)}
+              placeholder="9769447954"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Enter your WhatsApp number (without +91, e.g. 9769447954).
+            </p>
+          </div>
+          <div>
+            <Label>Support Email</Label>
+            <Input
+              type="email"
+              data-ocid="settings.input"
+              value={supportEmail}
+              onChange={(e) => setSupportEmail(e.target.value)}
+              placeholder="you@example.com"
+            />
+          </div>
+          <Button
+            data-ocid="settings.save_button"
+            onClick={() => saveContactMutation.mutate()}
+            disabled={
+              !whatsapp || !supportEmail || saveContactMutation.isPending
+            }
+          >
+            {contactSaved
+              ? "Saved!"
+              : saveContactMutation.isPending
+                ? "Saving..."
+                : "Save Contact Info"}
+          </Button>
+        </div>
       </div>
 
       <div className="border-t pt-4">

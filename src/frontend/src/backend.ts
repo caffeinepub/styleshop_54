@@ -109,8 +109,10 @@ export interface OrderType {
     id: bigint;
     customerName: string;
     status: string;
+    trackingNumber: string;
     customerPhone: string;
     shippingCountry: string;
+    ownerPrincipal: string;
     createdAt: bigint;
     shippingZip: string;
     shippingStreet: string;
@@ -190,6 +192,8 @@ export interface backendInterface {
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
     addProduct(product: Product): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+    claimAdminWithBackupCode(code: string): Promise<boolean>;
+    createCheckoutSession(items: Array<ShoppingItem>, successUrl: string, cancelUrl: string): Promise<string>;
     createOrder(order: OrderType): Promise<bigint>;
     deleteProduct(id: bigint): Promise<void>;
     getAllCustomers(): Promise<Array<Customer>>;
@@ -197,18 +201,28 @@ export interface backendInterface {
     getAllProducts(): Promise<Array<Product>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
+    getContactInfo(): Promise<{
+        whatsapp: string;
+        email: string;
+    }>;
+    getMyOrders(): Promise<Array<OrderType>>;
     getOrderById(id: bigint): Promise<OrderType | null>;
+    getOrderByIdAndPhone(id: bigint, phone: string): Promise<OrderType | null>;
     getOrdersByEmail(email: string): Promise<Array<OrderType>>;
     getProductsByCategory(category: string): Promise<Array<Product>>;
+    getStripeSessionStatus(sessionId: string): Promise<StripeSessionStatus>;
     getUpiId(): Promise<string>;
-    getRazorpayKeyId(): Promise<string>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
     isPaymentConfigured(): Promise<boolean>;
+    isStripeConfigured(): Promise<boolean>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
+    setContactInfo(whatsapp: string, email: string): Promise<void>;
+    setStripeConfiguration(config: StripeConfiguration): Promise<void>;
     setUpiId(id: string): Promise<void>;
-    setRazorpayKeyId(keyId: string): Promise<void>;
+    transform(input: TransformationInput): Promise<TransformationOutput>;
     updateOrderStatus(orderId: bigint, newStatus: string): Promise<void>;
+    updateOrderTracking(orderId: bigint, trackingNumber: string): Promise<void>;
     updateProduct(id: bigint, updatedProduct: Product): Promise<void>;
 }
 import type { OrderType as _OrderType, StripeSessionStatus as _StripeSessionStatus, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
@@ -253,6 +267,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n1(this._uploadFile, this._downloadFile, arg1));
+            return result;
+        }
+    }
+    async claimAdminWithBackupCode(arg0: string): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.claimAdminWithBackupCode(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.claimAdminWithBackupCode(arg0);
             return result;
         }
     }
@@ -368,6 +396,37 @@ export class Backend implements backendInterface {
             return from_candid_UserRole_n4(this._uploadFile, this._downloadFile, result);
         }
     }
+    async getContactInfo(): Promise<{
+        whatsapp: string;
+        email: string;
+    }> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getContactInfo();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getContactInfo();
+            return result;
+        }
+    }
+    async getMyOrders(): Promise<Array<OrderType>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getMyOrders();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getMyOrders();
+            return result;
+        }
+    }
     async getOrderById(arg0: bigint): Promise<OrderType | null> {
         if (this.processError) {
             try {
@@ -379,6 +438,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.getOrderById(arg0);
+            return from_candid_opt_n6(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getOrderByIdAndPhone(arg0: bigint, arg1: string): Promise<OrderType | null> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getOrderByIdAndPhone(arg0, arg1);
+                return from_candid_opt_n6(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getOrderByIdAndPhone(arg0, arg1);
             return from_candid_opt_n6(this._uploadFile, this._downloadFile, result);
         }
     }
@@ -424,6 +497,20 @@ export class Backend implements backendInterface {
             return from_candid_StripeSessionStatus_n7(this._uploadFile, this._downloadFile, result);
         }
     }
+    async getUpiId(): Promise<string> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getUpiId();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getUpiId();
+            return result;
+        }
+    }
     async getUserProfile(arg0: Principal): Promise<UserProfile | null> {
         if (this.processError) {
             try {
@@ -449,6 +536,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.isCallerAdmin();
+            return result;
+        }
+    }
+    async isPaymentConfigured(): Promise<boolean> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.isPaymentConfigured();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.isPaymentConfigured();
             return result;
         }
     }
@@ -480,6 +581,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async setContactInfo(arg0: string, arg1: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.setContactInfo(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.setContactInfo(arg0, arg1);
+            return result;
+        }
+    }
     async setStripeConfiguration(arg0: StripeConfiguration): Promise<void> {
         if (this.processError) {
             try {
@@ -491,6 +606,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.setStripeConfiguration(arg0);
+            return result;
+        }
+    }
+    async setUpiId(arg0: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.setUpiId(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.setUpiId(arg0);
             return result;
         }
     }
@@ -522,6 +651,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async updateOrderTracking(arg0: bigint, arg1: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.updateOrderTracking(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updateOrderTracking(arg0, arg1);
+            return result;
+        }
+    }
     async updateProduct(arg0: bigint, arg1: Product): Promise<void> {
         if (this.processError) {
             try {
@@ -536,78 +679,7 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async getUpiId(): Promise<string> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getUpiId();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getUpiId();
-            return result;
-        }
-    }
-    async setUpiId(arg0: string): Promise<void> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.setUpiId(arg0);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.setUpiId(arg0);
-            return result;
-        }
-    }
-    async getRazorpayKeyId(): Promise<string> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getRazorpayKeyId();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getRazorpayKeyId();
-            return result;
-        }
-    }
-    async isPaymentConfigured(): Promise<boolean> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.isPaymentConfigured();
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.isPaymentConfigured();
-            return result;
-        }
-    }
-    async setRazorpayKeyId(arg0: string): Promise<void> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.setRazorpayKeyId(arg0);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.setRazorpayKeyId(arg0);
-            return result;
-        }
-    }
 }
-
 function from_candid_StripeSessionStatus_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _StripeSessionStatus): StripeSessionStatus {
     return from_candid_variant_n8(_uploadFile, _downloadFile, value);
 }

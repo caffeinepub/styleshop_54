@@ -61,6 +61,12 @@ export default function ProductCard({
           {formatPrice(product.price)}
         </p>
 
+        {product.description && (
+          <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
+            {product.description}
+          </p>
+        )}
+
         {product.sizes.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-2">
             {product.sizes.map((s) => (
@@ -80,8 +86,12 @@ export default function ProductCard({
           </div>
         )}
 
+        <p className="text-xs text-muted-foreground mt-2">
+          🚚 Delivery: 5–8 days
+        </p>
+
         <Button
-          className="w-full mt-3 text-xs h-8"
+          className="w-full mt-2 text-xs h-8"
           disabled={!product.inStock}
           onClick={() => addItem(product, selectedSize)}
         >

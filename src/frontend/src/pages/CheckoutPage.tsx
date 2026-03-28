@@ -3,6 +3,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { Loader2, Plus, QrCode } from "lucide-react";
 import { useState } from "react";
 import type { OrderType } from "../backend";
+import DeliveryStrip from "../components/DeliveryStrip";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -26,6 +27,11 @@ interface FormData {
   zip: string;
   country: string;
   notes: string;
+}
+
+interface ContactInfo {
+  whatsapp: string;
+  email: string;
 }
 
 export default function CheckoutPage() {
@@ -59,10 +65,19 @@ export default function CheckoutPage() {
     queryKey: ["upi-id"],
     queryFn: async () => {
       if (!actor) return "";
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return actor!.getUpiId();
     },
     enabled: !!actor && !isFetching && step === "payment",
+  });
+
+  const { data: contactInfo } = useQuery<ContactInfo>({
+    queryKey: ["contact-info"],
+    queryFn: async () => {
+      if (!actor)
+        return { whatsapp: "9769447954", email: "abhishekrathi0710@gmail.com" };
+      return actor!.getContactInfo() as Promise<ContactInfo>;
+    },
+    enabled: !!actor,
   });
 
   const qrUrl = upiId
@@ -105,6 +120,8 @@ export default function CheckoutPage() {
         status: "Pending",
         stripePaymentIntentId: txnId,
         createdAt: BigInt(Date.now()),
+        trackingNumber: "",
+        ownerPrincipal: "",
       };
       const orderId = await actor.createOrder(order);
       clearCart();
@@ -133,8 +150,42 @@ export default function CheckoutPage() {
     );
   }
 
+  const wa = contactInfo?.whatsapp || "9769447954";
+  const supportEmail = contactInfo?.email || "abhishekrathi0710@gmail.com";
+
+  const PaymentWarning = () => (
+    <div className="bg-red-50 border-2 border-red-400 rounded-xl p-4 text-red-900">
+      <p className="font-semibold mb-2">⚠️ Important Notice</p>
+      <p className="text-sm leading-relaxed">
+        If you make the payment but do <strong>not</strong> enter the correct
+        Transaction ID, your order will <strong>NOT be confirmed</strong>.
+        <br />
+        <br />
+        For any doubt or issue regarding payment, order, or eligibility —
+        WhatsApp us at{" "}
+        <a
+          href={`https://wa.me/91${wa}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline font-semibold text-red-700 hover:text-red-900"
+        >
+          {wa}
+        </a>{" "}
+        or email us at{" "}
+        <a
+          href={`mailto:${supportEmail}`}
+          className="underline font-semibold text-red-700 hover:text-red-900"
+        >
+          {supportEmail}
+        </a>
+        .
+      </p>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-background">
+      <DeliveryStrip />
       <div className="max-w-5xl mx-auto px-4 py-8">
         <button
           type="button"
@@ -221,7 +272,6 @@ export default function CheckoutPage() {
                     />
                   </div>
                 </div>
-
                 <div>
                   <Label htmlFor="street">Street Address *</Label>
                   <Input
@@ -233,7 +283,6 @@ export default function CheckoutPage() {
                     placeholder="123, MG Road"
                   />
                 </div>
-
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <div className="col-span-2">
                     <Label htmlFor="city">City *</Label>
@@ -269,7 +318,6 @@ export default function CheckoutPage() {
                     />
                   </div>
                 </div>
-
                 <div>
                   <Label htmlFor="country">Country *</Label>
                   <Input
@@ -281,7 +329,6 @@ export default function CheckoutPage() {
                     placeholder="India"
                   />
                 </div>
-
                 <div>
                   <Label htmlFor="notes">Order Notes (optional)</Label>
                   <Textarea
@@ -293,7 +340,6 @@ export default function CheckoutPage() {
                     rows={3}
                   />
                 </div>
-
                 <Button
                   type="submit"
                   data-ocid="checkout.primary_button"
@@ -308,15 +354,12 @@ export default function CheckoutPage() {
             {step === "payment" && (
               <div className="space-y-6">
                 <h1 className="text-2xl font-bold">Pay via UPI</h1>
-
-                {/* Amount banner */}
                 <div className="bg-foreground text-background rounded-xl px-6 py-4 text-center">
                   <p className="text-sm opacity-70 mb-1">Amount to Pay</p>
                   <p className="text-4xl font-bold tracking-tight">
                     {formatPrice(totalAmount)}
                   </p>
                 </div>
-
                 {upiLoading ? (
                   <div
                     className="flex items-center justify-center py-12"
@@ -355,8 +398,6 @@ export default function CheckoutPage() {
                     </div>
                   </div>
                 )}
-
-                {/* Warning note */}
                 <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-4 text-amber-900">
                   <p className="font-semibold mb-1">⚠️ Important</p>
                   <p className="text-sm leading-relaxed">
@@ -366,7 +407,7 @@ export default function CheckoutPage() {
                     balance and add both Transaction IDs below.
                   </p>
                 </div>
-
+                <PaymentWarning />
                 <Button
                   data-ocid="payment.primary_button"
                   className="w-full"
@@ -386,7 +427,7 @@ export default function CheckoutPage() {
                   You can find the Transaction ID in your UPI app (Google Pay /
                   PhonePe / Paytm) after successful payment.
                 </p>
-
+                <PaymentWarning />
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="txn1">Transaction ID 1 *</Label>
@@ -400,7 +441,6 @@ export default function CheckoutPage() {
                       className="font-mono"
                     />
                   </div>
-
                   {showTxn2 ? (
                     <div>
                       <Label htmlFor="txn2">
@@ -427,7 +467,6 @@ export default function CheckoutPage() {
                     </button>
                   )}
                 </div>
-
                 {error && (
                   <p
                     className="text-destructive text-sm"
@@ -436,7 +475,6 @@ export default function CheckoutPage() {
                     {error}
                   </p>
                 )}
-
                 <Button
                   data-ocid="txn.submit_button"
                   className="w-full"
@@ -453,7 +491,6 @@ export default function CheckoutPage() {
                     "Confirm Order"
                   )}
                 </Button>
-
                 <p className="text-xs text-center text-muted-foreground">
                   Your order will be confirmed once we verify the payment.
                 </p>

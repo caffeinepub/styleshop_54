@@ -1,5 +1,6 @@
-import { useNavigate } from "@tanstack/react-router";
-import { ShoppingBag, User } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { Menu, ShoppingBag, User, X } from "lucide-react";
+import { useState } from "react";
 import { useCart } from "../context/CartContext";
 import { Button } from "./ui/button";
 
@@ -10,6 +11,7 @@ interface HeaderProps {
 export default function Header({ onCartClick }: HeaderProps) {
   const { totalItems } = useCart();
   const navigate = useNavigate();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border">
@@ -35,6 +37,15 @@ export default function Header({ onCartClick }: HeaderProps) {
           >
             Shop
           </button>
+          <Link
+            to="/track-order"
+            className="hover:text-primary transition-colors"
+          >
+            Track Order
+          </Link>
+          <Link to="/account" className="hover:text-primary transition-colors">
+            My Orders
+          </Link>
           <button
             type="button"
             onClick={() => navigate({ to: "/admin" })}
@@ -44,11 +55,24 @@ export default function Header({ onCartClick }: HeaderProps) {
           </button>
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1">
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate({ to: "/admin" })}
+            className="md:hidden"
+            onClick={() => setMobileMenuOpen((v) => !v)}
+            aria-label="Toggle menu"
+          >
+            {mobileMenuOpen ? (
+              <X className="h-5 w-5" />
+            ) : (
+              <Menu className="h-5 w-5" />
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate({ to: "/account" })}
           >
             <User className="h-5 w-5" />
           </Button>
@@ -67,6 +91,52 @@ export default function Header({ onCartClick }: HeaderProps) {
           </Button>
         </div>
       </div>
+
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t border-border bg-background/95 backdrop-blur">
+          <button
+            type="button"
+            className="w-full text-left px-6 py-4 text-sm font-medium hover:bg-muted transition-colors"
+            onClick={() => {
+              navigate({ to: "/" });
+              setMobileMenuOpen(false);
+            }}
+          >
+            Shop
+          </button>
+          <Link
+            to="/track-order"
+            className="block w-full text-left px-6 py-4 text-sm font-medium hover:bg-muted transition-colors border-t border-border"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            Track Order
+          </Link>
+          <Link
+            to="/account"
+            className="block w-full text-left px-6 py-4 text-sm font-medium hover:bg-muted transition-colors border-t border-border"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            My Orders
+          </Link>
+          <button
+            type="button"
+            className="w-full text-left px-6 py-4 text-sm font-medium hover:bg-muted transition-colors border-t border-border"
+            onClick={() => {
+              navigate({ to: "/admin" });
+              setMobileMenuOpen(false);
+            }}
+          >
+            Admin
+          </button>
+          <Link
+            to="/policies"
+            className="block w-full text-left px-6 py-4 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors border-t border-border"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            Policies
+          </Link>
+        </div>
+      )}
     </header>
   );
 }

@@ -21,7 +21,9 @@ export default function AdminPage() {
   const { login, identity, clear } = useInternetIdentity();
   const queryClient = useQueryClient();
   const [tokenInput, setTokenInput] = useState("");
+  const [backupCodeInput, setBackupCodeInput] = useState("");
   const [claimError, setClaimError] = useState("");
+  const [useBackup, setUseBackup] = useState(false);
 
   const { data: isAdmin, isLoading: checkingAdmin } = useQuery({
     queryKey: ["isAdmin", identity?.getPrincipal().toString()],
@@ -40,9 +42,26 @@ export default function AdminPage() {
       queryClient.invalidateQueries({ queryKey: ["isAdmin"] });
     },
     onError: () => {
-      setClaimError(
-        "Invalid token. Check your Caffeine project settings and try again.",
-      );
+      setClaimError("Invalid token. Try the backup code option below.");
+    },
+  });
+
+  const claimAdminBackup = useMutation({
+    mutationFn: async () => {
+      if (!actor) throw new Error("Not connected");
+      const success = await actor.claimAdminWithBackupCode(backupCodeInput);
+      if (!success)
+        throw new Error(
+          "Invalid backup code or admin already claimed on this deployment",
+        );
+    },
+    onSuccess: () => {
+      setClaimError("");
+      queryClient.invalidateQueries({ queryKey: ["isAdmin"] });
+    },
+    onError: (e: unknown) => {
+      const msg = e instanceof Error ? e.message : "Invalid backup code";
+      setClaimError(msg);
     },
   });
 
@@ -72,27 +91,78 @@ export default function AdminPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4">
         <h1 className="text-2xl font-bold">Claim Admin Access</h1>
-        <p className="text-muted-foreground text-center max-w-sm">
-          Enter the Admin Token from your Caffeine project settings to claim
-          admin access.
-        </p>
-        <div className="flex flex-col gap-2 w-full max-w-sm">
-          <Input
-            type="password"
-            placeholder="Paste your admin token here"
-            value={tokenInput}
-            onChange={(e) => setTokenInput(e.target.value)}
-          />
-          {claimError && (
-            <p className="text-sm text-destructive">{claimError}</p>
-          )}
-          <Button
-            onClick={() => claimAdmin.mutate()}
-            disabled={!tokenInput || claimAdmin.isPending}
-          >
-            {claimAdmin.isPending ? "Claiming..." : "Claim Admin Access"}
-          </Button>
-        </div>
+
+        {!useBackup ? (
+          <>
+            <p className="text-muted-foreground text-center max-w-sm">
+              Enter the Admin Token from your deployment link, or use the backup
+              code instead.
+            </p>
+            <div className="flex flex-col gap-2 w-full max-w-sm">
+              <Input
+                type="password"
+                placeholder="Paste your admin token here"
+                value={tokenInput}
+                onChange={(e) => setTokenInput(e.target.value)}
+              />
+              {claimError && (
+                <p className="text-sm text-destructive">{claimError}</p>
+              )}
+              <Button
+                onClick={() => claimAdmin.mutate()}
+                disabled={!tokenInput || claimAdmin.isPending}
+              >
+                {claimAdmin.isPending ? "Claiming..." : "Claim Admin Access"}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setUseBackup(true);
+                  setClaimError("");
+                }}
+              >
+                Use backup code instead
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="text-muted-foreground text-center max-w-sm">
+              Enter the backup admin code to claim access.
+            </p>
+            <div className="flex flex-col gap-2 w-full max-w-sm">
+              <Input
+                type="password"
+                placeholder="Enter backup admin code"
+                value={backupCodeInput}
+                onChange={(e) => setBackupCodeInput(e.target.value)}
+              />
+              {claimError && (
+                <p className="text-sm text-destructive">{claimError}</p>
+              )}
+              <Button
+                onClick={() => claimAdminBackup.mutate()}
+                disabled={!backupCodeInput || claimAdminBackup.isPending}
+              >
+                {claimAdminBackup.isPending
+                  ? "Claiming..."
+                  : "Claim with Backup Code"}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setUseBackup(false);
+                  setClaimError("");
+                }}
+              >
+                Back to token input
+              </Button>
+            </div>
+          </>
+        )}
+
         <Button variant="outline" onClick={clear}>
           Logout
         </Button>

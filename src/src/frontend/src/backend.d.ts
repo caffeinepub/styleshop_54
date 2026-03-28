@@ -78,7 +78,10 @@ export interface backendInterface {
     getProductsByCategory(category: string): Promise<Array<Product>>;
     getRazorpayKeyId(): Promise<string>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
+    claimAdminWithBackupCode(code: string): Promise<boolean>;
+    getUpiId(): Promise<string>;
     isCallerAdmin(): Promise<boolean>;
+    setUpiId(id: string): Promise<void>;
     isPaymentConfigured(): Promise<boolean>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     setRazorpayKeyId(keyId: string): Promise<void>;

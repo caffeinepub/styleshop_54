@@ -5,10 +5,13 @@ import {
   createRouter,
 } from "@tanstack/react-router";
 import { CartProvider } from "./context/CartContext";
+import AccountPage from "./pages/AccountPage";
 import AdminPage from "./pages/AdminPage";
 import CheckoutPage from "./pages/CheckoutPage";
 import OrderConfirmationPage from "./pages/OrderConfirmationPage";
+import PoliciesPage from "./pages/PoliciesPage";
 import StorePage from "./pages/StorePage";
+import TrackOrderPage from "./pages/TrackOrderPage";
 
 const rootRoute = createRootRoute();
 
@@ -36,11 +39,32 @@ const adminRoute = createRoute({
   component: AdminPage,
 });
 
+const trackOrderRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/track-order",
+  component: TrackOrderPage,
+});
+
+const accountRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/account",
+  component: AccountPage,
+});
+
+const policiesRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/policies",
+  component: PoliciesPage,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   checkoutRoute,
   orderConfirmationRoute,
   adminRoute,
+  trackOrderRoute,
+  accountRoute,
+  policiesRoute,
 ]);
 
 const router = createRouter({ routeTree });

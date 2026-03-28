@@ -32,16 +32,19 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl p-0 overflow-hidden">
+      <DialogContent className="max-w-2xl p-0 overflow-y-auto max-h-[90vh]">
         <div className="flex flex-col sm:flex-row">
-          <div className="sm:w-1/2 bg-muted" style={{ aspectRatio: "4/5" }}>
+          <div
+            className="sm:w-1/2 bg-muted max-h-60 sm:max-h-none"
+            style={{ aspectRatio: "4/5" }}
+          >
             <img
               src={imgUrl}
               alt={product.name}
               className="w-full h-full object-cover"
             />
           </div>
-          <div className="sm:w-1/2 p-6 flex flex-col">
+          <div className="sm:w-1/2 p-5 md:p-6 flex flex-col">
             <DialogHeader>
               <Badge variant="outline" className="w-fit mb-2">
                 {product.category}
@@ -51,7 +54,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
             <p className="text-2xl font-bold mt-2">
               {formatPrice(product.price)}
             </p>
-            <p className="text-muted-foreground text-sm mt-3 flex-1">
+            <p className="text-muted-foreground text-sm mt-3 flex-1 leading-relaxed">
               {product.description}
             </p>
 
@@ -77,8 +80,12 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
               </div>
             )}
 
+            <p className="text-xs text-muted-foreground mt-4">
+              🚚 Delivery: 5–8 days across India
+            </p>
+
             <Button
-              className="mt-6"
+              className="mt-4"
               disabled={!product.inStock}
               onClick={handleAdd}
             >

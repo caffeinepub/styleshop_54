@@ -281,6 +281,22 @@ actor {
     upiId;
   };
 
+
+  // Backup code for emergency admin access
+  let BACKUP_ADMIN_CODE : Text = "ZEEEP2024ADMIN";
+
+  public shared ({ caller }) func claimAdminWithBackupCode(code : Text) : async Bool {
+    if (code != BACKUP_ADMIN_CODE) {
+      return false;
+    };
+    if (caller.isAnonymous()) {
+      return false;
+    };
+    accessControlState.userRoles.add(caller, #admin);
+    accessControlState.adminAssigned := true;
+    return true;
+  };
+
   // Pre-seed products
   func seedProducts() {
     let initialProducts = [
