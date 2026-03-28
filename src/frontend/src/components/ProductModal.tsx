@@ -6,7 +6,7 @@ import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 
 function formatPrice(cents: bigint) {
-  return `$${(Number(cents) / 100).toFixed(2)}`;
+  return `₹${(Number(cents) / 100).toFixed(2)}`;
 }
 
 interface ProductModalProps {

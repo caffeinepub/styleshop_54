@@ -5,7 +5,7 @@ import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 
 function formatPrice(cents: bigint) {
-  return `$${(Number(cents) / 100).toFixed(2)}`;
+  return `₹${(Number(cents) / 100).toFixed(2)}`;
 }
 
 interface ProductCardProps {

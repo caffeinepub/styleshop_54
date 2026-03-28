@@ -18,7 +18,8 @@ function formatPrice(paise: bigint) {
 }
 
 function formatDate(ts: bigint) {
-  return new Date(Number(ts)).toLocaleDateString("en-IN");
+  const d = new Date(Number(ts));
+  return `${d.toLocaleDateString("en-IN")} ${d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}`;
 }
 
 function statusBadge(status: string) {
