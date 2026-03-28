@@ -17,7 +17,7 @@ import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import { storeSessionParameter } from "../utils/urlParams";
 
 export default function AdminPage() {
-  const { actor } = useActor();
+  const { actor, isFetching: actorLoading } = useActor();
   const { login, identity, clear } = useInternetIdentity();
   const queryClient = useQueryClient();
   const [tokenInput, setTokenInput] = useState("");
@@ -77,6 +77,16 @@ export default function AdminPage() {
     );
   }
 
+  if (actorLoading && !actor) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-muted-foreground animate-pulse">
+          Connecting to network...
+        </p>
+      </div>
+    );
+  }
+
   if (checkingAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -110,7 +120,7 @@ export default function AdminPage() {
               )}
               <Button
                 onClick={() => claimAdmin.mutate()}
-                disabled={!tokenInput || claimAdmin.isPending}
+                disabled={!tokenInput || claimAdmin.isPending || !actor}
               >
                 {claimAdmin.isPending ? "Claiming..." : "Claim Admin Access"}
               </Button>
@@ -143,7 +153,9 @@ export default function AdminPage() {
               )}
               <Button
                 onClick={() => claimAdminBackup.mutate()}
-                disabled={!backupCodeInput || claimAdminBackup.isPending}
+                disabled={
+                  !backupCodeInput || claimAdminBackup.isPending || !actor
+                }
               >
                 {claimAdminBackup.isPending
                   ? "Claiming..."

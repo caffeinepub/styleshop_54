@@ -34,7 +34,7 @@ export default function CartSidebar({ open, onClose }: CartSidebarProps) {
             <div className="flex-1 overflow-y-auto py-4 space-y-4">
               {items.map((item) => (
                 <div
-                  key={`${item.product.id}-${item.selectedSize}`}
+                  key={`${item.product.id}-${item.selectedSize}-${item.selectedColor}`}
                   className="flex gap-3 items-start"
                 >
                   <img
@@ -46,9 +46,18 @@ export default function CartSidebar({ open, onClose }: CartSidebarProps) {
                     <p className="font-medium text-sm truncate">
                       {item.product.name}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Size: {item.selectedSize}
-                    </p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      {item.selectedSize && (
+                        <p className="text-xs text-muted-foreground">
+                          Size: {item.selectedSize}
+                        </p>
+                      )}
+                      {item.selectedColor && (
+                        <p className="text-xs text-muted-foreground">
+                          · {item.selectedColor}
+                        </p>
+                      )}
+                    </div>
                     <p className="text-sm font-semibold mt-1">
                       {formatPrice(Number(item.product.price) * item.quantity)}
                     </p>
@@ -61,6 +70,7 @@ export default function CartSidebar({ open, onClose }: CartSidebarProps) {
                           updateQuantity(
                             item.product.id,
                             item.selectedSize,
+                            item.selectedColor,
                             item.quantity - 1,
                           )
                         }
@@ -78,6 +88,7 @@ export default function CartSidebar({ open, onClose }: CartSidebarProps) {
                           updateQuantity(
                             item.product.id,
                             item.selectedSize,
+                            item.selectedColor,
                             item.quantity + 1,
                           )
                         }
@@ -91,7 +102,11 @@ export default function CartSidebar({ open, onClose }: CartSidebarProps) {
                     size="icon"
                     className="h-7 w-7 text-muted-foreground"
                     onClick={() =>
-                      removeItem(item.product.id, item.selectedSize)
+                      removeItem(
+                        item.product.id,
+                        item.selectedSize,
+                        item.selectedColor,
+                      )
                     }
                   >
                     <Trash2 className="h-4 w-4" />
