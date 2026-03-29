@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Search, X } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { Product } from "../backend";
 import CartSidebar from "../components/CartSidebar";
 import DeliveryStrip from "../components/DeliveryStrip";
@@ -11,11 +11,11 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { useActor } from "../hooks/useActor";
 
-const CATEGORIES = ["All", "Men", "Accessories"];
+type ProductWithSub = Product & { subcategory?: string };
 
 export default function StorePage() {
   const { actor } = useActor();
-  const [category, setCategory] = useState("All");
+  const [selectedSubcategory, setSelectedSubcategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [cartOpen, setCartOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -26,8 +26,27 @@ export default function StorePage() {
     enabled: !!actor,
   });
 
-  const filtered = products
-    .filter((p) => category === "All" || p.category === category)
+  // Build dynamic subcategory list from loaded products
+  const subcategoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const p of products as ProductWithSub[]) {
+      const sub = p.subcategory || p.category || "Other";
+      counts[sub] = (counts[sub] || 0) + 1;
+    }
+    return counts;
+  }, [products]);
+
+  const subcategories = useMemo(
+    () => Object.keys(subcategoryCounts).sort(),
+    [subcategoryCounts],
+  );
+
+  const filtered = (products as ProductWithSub[])
+    .filter(
+      (p) =>
+        selectedSubcategory === "All" ||
+        (p.subcategory || p.category) === selectedSubcategory,
+    )
     .filter(
       (p) =>
         !searchQuery ||
@@ -84,20 +103,33 @@ export default function StorePage() {
           )}
         </div>
 
-        {/* Category Filter */}
+        {/* Subcategory Filter */}
         <div className="flex flex-wrap gap-2 mb-4 md:mb-6 overflow-x-auto">
-          {CATEGORIES.map((cat) => (
+          <button
+            type="button"
+            data-ocid="store.tab"
+            onClick={() => setSelectedSubcategory("All")}
+            className={`px-5 py-2 rounded-full text-sm font-medium transition-colors border whitespace-nowrap ${
+              selectedSubcategory === "All"
+                ? "bg-foreground text-background border-foreground"
+                : "bg-background text-foreground border-border hover:border-foreground"
+            }`}
+          >
+            All ({products.length})
+          </button>
+          {subcategories.map((sub) => (
             <button
               type="button"
-              key={cat}
-              onClick={() => setCategory(cat)}
+              key={sub}
+              data-ocid="store.tab"
+              onClick={() => setSelectedSubcategory(sub)}
               className={`px-5 py-2 rounded-full text-sm font-medium transition-colors border whitespace-nowrap ${
-                category === cat
+                selectedSubcategory === sub
                   ? "bg-foreground text-background border-foreground"
                   : "bg-background text-foreground border-border hover:border-foreground"
               }`}
             >
-              {cat}
+              {sub} ({subcategoryCounts[sub]})
             </button>
           ))}
         </div>

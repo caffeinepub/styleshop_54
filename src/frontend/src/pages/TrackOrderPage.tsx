@@ -5,6 +5,7 @@ import type { OrderType } from "../backend";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { useActor } from "../hooks/useActor";
+import { formatOrderId } from "../utils/orderId";
 
 function statusColor(status: string) {
   switch (status) {
@@ -21,6 +22,16 @@ function statusColor(status: string) {
     default:
       return "bg-muted text-muted-foreground border-border";
   }
+}
+
+function formatDateTime(timestamp: number): string {
+  return new Date(timestamp).toLocaleString("en-IN", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export default function TrackOrderPage() {
@@ -137,9 +148,9 @@ export default function TrackOrderPage() {
           >
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div>
-                <p className="text-xs text-muted-foreground">Order Number</p>
+                <p className="text-xs text-muted-foreground">Order ID</p>
                 <p className="text-xl font-bold font-mono">
-                  #{order.orderNumber.toString()}
+                  {formatOrderId(Number(order.orderNumber))}
                 </p>
               </div>
               <span
@@ -149,12 +160,7 @@ export default function TrackOrderPage() {
               </span>
             </div>
             <div className="text-sm text-muted-foreground">
-              Placed on{" "}
-              {new Date(Number(order.createdAt)).toLocaleDateString("en-IN", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
+              Placed on {formatDateTime(Number(order.createdAt))}
             </div>
             {order.trackingNumber && (
               <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">

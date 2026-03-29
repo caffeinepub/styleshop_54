@@ -23,15 +23,31 @@ import {
 } from "../ui/select";
 import { Textarea } from "../ui/textarea";
 
+const SUBCATEGORIES = [
+  "T-Shirt",
+  "Shirt",
+  "Jeans",
+  "Pants",
+  "Hoodie",
+  "Jacket",
+  "Sweater",
+  "Shorts",
+  "Footwear",
+  "Accessories",
+];
+
+type ProductWithSub = Product & { subcategory?: string };
+
 function formatPrice(cents: bigint) {
   return (Number(cents) / 100).toFixed(2);
 }
 
-const emptyProduct: Omit<Product, "id" | "createdAt"> = {
+const emptyProduct: Omit<ProductWithSub, "id" | "createdAt"> = {
   name: "",
   description: "",
   price: BigInt(0),
   category: "Men",
+  subcategory: "",
   sizes: ["S", "M", "L", "XL"],
   imageUrl: "",
   inStock: true,
@@ -40,10 +56,12 @@ const emptyProduct: Omit<Product, "id" | "createdAt"> = {
 export default function AdminProducts() {
   const { actor } = useActor();
   const qc = useQueryClient();
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editingProduct, setEditingProduct] = useState<ProductWithSub | null>(
+    null,
+  );
   const [addingNew, setAddingNew] = useState(false);
   const [newProduct, setNewProduct] =
-    useState<Omit<Product, "id" | "createdAt">>(emptyProduct);
+    useState<Omit<ProductWithSub, "id" | "createdAt">>(emptyProduct);
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["products"],
@@ -52,7 +70,7 @@ export default function AdminProducts() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (p: Product) => actor!.updateProduct(p.id, p),
+    mutationFn: (p: ProductWithSub) => actor!.updateProduct(p.id, p as Product),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["products"] });
       setEditingProduct(null);
@@ -70,7 +88,7 @@ export default function AdminProducts() {
         ...newProduct,
         id: BigInt(0),
         createdAt: BigInt(Date.now()),
-      }),
+      } as Product),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["products"] });
       setAddingNew(false);
@@ -99,6 +117,7 @@ export default function AdminProducts() {
               <th className="text-left py-2 pr-3">Image</th>
               <th className="text-left py-2 pr-3">Name</th>
               <th className="text-left py-2 pr-3">Category</th>
+              <th className="text-left py-2 pr-3">Subcategory</th>
               <th className="text-left py-2 pr-3">Price</th>
               <th className="text-left py-2 pr-3">Sizes</th>
               <th className="text-left py-2 pr-3">Stock</th>
@@ -106,7 +125,7 @@ export default function AdminProducts() {
             </tr>
           </thead>
           <tbody>
-            {products.map((p) => (
+            {(products as ProductWithSub[]).map((p) => (
               <tr key={p.id.toString()} className="border-b hover:bg-muted/30">
                 <td className="py-2 pr-3">
                   <img
@@ -126,8 +145,15 @@ export default function AdminProducts() {
                 <td className="py-2 pr-3">
                   <Badge variant="outline">{p.category}</Badge>
                 </td>
+                <td className="py-2 pr-3">
+                  {p.subcategory ? (
+                    <Badge variant="secondary">{p.subcategory}</Badge>
+                  ) : (
+                    <span className="text-muted-foreground text-xs">—</span>
+                  )}
+                </td>
                 <td className="py-2 pr-3 font-semibold">
-                  ${formatPrice(p.price)}
+                  ₹{formatPrice(p.price)}
                 </td>
                 <td className="py-2 pr-3">{p.sizes.join(", ")}</td>
                 <td className="py-2 pr-3">
@@ -195,12 +221,12 @@ function ProductEditDialog({
   onClose,
   loading,
 }: {
-  product: Product;
-  onSave: (p: Product) => void;
+  product: ProductWithSub;
+  onSave: (p: ProductWithSub) => void;
   onClose: () => void;
   loading: boolean;
 }) {
-  const [p, setP] = useState<Product>(product);
+  const [p, setP] = useState<ProductWithSub>(product);
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -234,8 +260,8 @@ function ProductFormDialog({
   loading,
 }: {
   title: string;
-  product: Omit<Product, "id" | "createdAt">;
-  onChange: (p: Omit<Product, "id" | "createdAt">) => void;
+  product: Omit<ProductWithSub, "id" | "createdAt">;
+  onChange: (p: Omit<ProductWithSub, "id" | "createdAt">) => void;
   onSave: () => void;
   onClose: () => void;
   loading: boolean;
@@ -267,8 +293,8 @@ function ProductFields({
   product,
   onChange,
 }: {
-  product: Product;
-  onChange: (updates: Partial<Product>) => void;
+  product: ProductWithSub;
+  onChange: (updates: Partial<ProductWithSub>) => void;
 }) {
   const priceStr = (Number(product.price) / 100).toFixed(2);
   const sizesStr = product.sizes.join(", ");
@@ -292,7 +318,7 @@ function ProductFields({
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label>Price ($)</Label>
+          <Label>Price (₹)</Label>
           <Input
             type="number"
             step="0.01"
@@ -321,6 +347,24 @@ function ProductFields({
             </SelectContent>
           </Select>
         </div>
+      </div>
+      <div>
+        <Label>Subcategory</Label>
+        <Select
+          value={product.subcategory || ""}
+          onValueChange={(v) => onChange({ subcategory: v })}
+        >
+          <SelectTrigger data-ocid="admin.products.select">
+            <SelectValue placeholder="Select subcategory..." />
+          </SelectTrigger>
+          <SelectContent>
+            {SUBCATEGORIES.map((sub) => (
+              <SelectItem key={sub} value={sub}>
+                {sub}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <div>
         <Label>Sizes (comma-separated)</Label>

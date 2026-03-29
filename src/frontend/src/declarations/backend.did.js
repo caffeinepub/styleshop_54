@@ -17,6 +17,7 @@ export const Product = IDL.Record({
   'sizes' : IDL.Vec(IDL.Text),
   'imageUrl' : IDL.Text,
   'category' : IDL.Text,
+  'subcategory' : IDL.Text,
   'price' : IDL.Nat,
 });
 export const UserRole = IDL.Variant({
@@ -170,6 +171,7 @@ export const idlFactory = ({ IDL }) => {
     'sizes' : IDL.Vec(IDL.Text),
     'imageUrl' : IDL.Text,
     'category' : IDL.Text,
+    'subcategory' : IDL.Text,
     'price' : IDL.Nat,
   });
   const UserRole = IDL.Variant({

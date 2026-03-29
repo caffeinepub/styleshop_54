@@ -4,6 +4,7 @@ import { ArrowLeft, LogIn, Package, User } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { useActor } from "../hooks/useActor";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
+import { formatOrderId } from "../utils/orderId";
 
 function statusColor(status: string) {
   switch (status) {
@@ -20,6 +21,16 @@ function statusColor(status: string) {
     default:
       return "bg-muted text-muted-foreground border-border";
   }
+}
+
+function formatDateTime(timestamp: number): string {
+  return new Date(timestamp).toLocaleString("en-IN", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export default function AccountPage() {
@@ -99,17 +110,12 @@ export default function AccountPage() {
               >
                 <div className="flex items-center justify-between flex-wrap gap-3">
                   <div>
-                    <p className="text-xs text-muted-foreground">
-                      Order Number
-                    </p>
+                    <p className="text-xs text-muted-foreground">Order ID</p>
                     <p className="font-bold font-mono">
-                      #{order.orderNumber.toString()}
+                      {formatOrderId(Number(order.orderNumber))}
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {new Date(Number(order.createdAt)).toLocaleDateString(
-                        "en-IN",
-                        { day: "numeric", month: "long", year: "numeric" },
-                      )}
+                      {formatDateTime(Number(order.createdAt))}
                     </p>
                   </div>
                   <span

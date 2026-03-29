@@ -20,7 +20,9 @@ export default function ProductCard({
 }: ProductCardProps) {
   const { addItem } = useCart();
   const [selectedSize, setSelectedSize] = useState(product.sizes[0] || "");
-  const colors = getColorsForCategory(product.category);
+  const subcategory =
+    (product as Product & { subcategory?: string }).subcategory ?? "";
+  const colors = getColorsForCategory(subcategory);
   const [selectedColor, setSelectedColor] = useState(colors[0]?.name || "");
 
   const imgUrl =
@@ -48,7 +50,7 @@ export default function ProductCard({
           </div>
         )}
         <Badge className="absolute top-2 left-2 text-xs" variant="outline">
-          {product.category}
+          {subcategory || product.category}
         </Badge>
       </button>
 
@@ -104,10 +106,10 @@ export default function ProductCard({
                   key={c.name}
                   title={c.name}
                   onClick={() => setSelectedColor(c.name)}
-                  className={`w-5 h-5 rounded-full border-2 transition-all ${
+                  className={`w-6 h-6 rounded-full transition-all ${
                     selectedColor === c.name
-                      ? "border-foreground scale-110 shadow-sm"
-                      : "border-transparent hover:border-muted-foreground"
+                      ? "ring-2 ring-offset-1 ring-foreground scale-110 shadow-sm"
+                      : "ring-1 ring-gray-400 hover:ring-2 hover:ring-foreground"
                   }`}
                   style={{ backgroundColor: c.hex }}
                 />

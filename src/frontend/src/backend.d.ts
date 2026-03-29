@@ -21,6 +21,7 @@ export interface Product {
     sizes: Array<string>;
     imageUrl: string;
     category: string;
+    subcategory: string;
     price: bigint;
 }
 export interface OrderType {

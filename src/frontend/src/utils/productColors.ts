@@ -45,29 +45,11 @@ const PANTS_COLORS: ColorOption[] = [
   { name: "Beige", hex: "#d4b896" },
 ];
 
-export function getColorsForCategory(category: string): ColorOption[] {
-  const cat = category.toLowerCase();
-  if (
-    cat.includes("t-shirt") ||
-    cat.includes("tshirt") ||
-    cat.includes("t shirt")
-  ) {
-    return TSHIRT_COLORS;
-  }
-  if (cat.includes("shirt")) {
-    return SHIRT_COLORS;
-  }
-  if (cat.includes("jean") || cat.includes("denim")) {
-    return JEANS_COLORS;
-  }
-  if (
-    cat.includes("pant") ||
-    cat.includes("trouser") ||
-    cat.includes("chino") ||
-    cat.includes("jogger")
-  ) {
-    return PANTS_COLORS;
-  }
-  // For accessories or unknown categories, return empty (no color swatches)
+export function getColorsForCategory(subcategory: string): ColorOption[] {
+  const sub = subcategory.toLowerCase();
+  if (sub === "t-shirt") return TSHIRT_COLORS;
+  if (sub === "shirt") return SHIRT_COLORS;
+  if (sub === "jeans") return JEANS_COLORS;
+  if (sub === "pants") return PANTS_COLORS;
   return [];
 }

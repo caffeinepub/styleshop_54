@@ -19,7 +19,9 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
   const { addItem } = useCart();
   const [selectedSize, setSelectedSize] = useState(product.sizes[0] || "");
   const [added, setAdded] = useState(false);
-  const colors = getColorsForCategory(product.category);
+  const subcategory =
+    (product as Product & { subcategory?: string }).subcategory ?? "";
+  const colors = getColorsForCategory(subcategory);
   const [selectedColor, setSelectedColor] = useState(colors[0]?.name || "");
 
   const imgUrl =
@@ -49,9 +51,16 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
           </div>
           <div className="sm:w-1/2 p-5 md:p-6 flex flex-col">
             <DialogHeader>
-              <Badge variant="outline" className="w-fit mb-2">
-                {product.category}
-              </Badge>
+              <div className="flex gap-2 mb-2">
+                <Badge variant="outline" className="w-fit">
+                  {product.category}
+                </Badge>
+                {subcategory && (
+                  <Badge variant="secondary" className="w-fit">
+                    {subcategory}
+                  </Badge>
+                )}
+              </div>
               <DialogTitle className="text-xl">{product.name}</DialogTitle>
             </DialogHeader>
             <p className="text-2xl font-bold mt-2">
@@ -98,10 +107,10 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
                       key={c.name}
                       title={c.name}
                       onClick={() => setSelectedColor(c.name)}
-                      className={`w-7 h-7 rounded-full border-2 transition-all ${
+                      className={`w-8 h-8 rounded-full transition-all ${
                         selectedColor === c.name
-                          ? "border-foreground scale-110 shadow-md"
-                          : "border-border hover:border-muted-foreground"
+                          ? "ring-2 ring-offset-2 ring-foreground scale-110 shadow-md"
+                          : "ring-1 ring-gray-400 hover:ring-2 hover:ring-foreground"
                       }`}
                       style={{ backgroundColor: c.hex }}
                     />
