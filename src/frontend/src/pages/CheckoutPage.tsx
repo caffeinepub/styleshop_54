@@ -11,6 +11,9 @@ import { Textarea } from "../components/ui/textarea";
 import { useCart } from "../context/CartContext";
 import { useActor } from "../hooks/useActor";
 
+const SHIPPING_THRESHOLD = 99900;
+const SHIPPING_FEE = 7000;
+
 function formatPrice(paise: number) {
   return `₹${(paise / 100).toFixed(2)}`;
 }
@@ -38,6 +41,9 @@ export default function CheckoutPage() {
   const { actor, isFetching } = useActor();
   const { items, totalAmount, clearCart } = useCart();
   const navigate = useNavigate();
+
+  const shippingFee = totalAmount < SHIPPING_THRESHOLD ? SHIPPING_FEE : 0;
+  const grandTotal = totalAmount + shippingFee;
 
   const [step, setStep] = useState<Step>("form");
   const [loading, setLoading] = useState(false);
@@ -116,7 +122,7 @@ export default function CheckoutPage() {
           price: i.product.price,
           size: i.selectedSize,
         })),
-        totalAmount: BigInt(totalAmount),
+        totalAmount: BigInt(grandTotal),
         status: "Pending",
         stripePaymentIntentId: txnId,
         createdAt: BigInt(Date.now()),
@@ -357,8 +363,13 @@ export default function CheckoutPage() {
                 <div className="bg-foreground text-background rounded-xl px-6 py-4 text-center">
                   <p className="text-sm opacity-70 mb-1">Amount to Pay</p>
                   <p className="text-4xl font-bold tracking-tight">
-                    {formatPrice(totalAmount)}
+                    {formatPrice(grandTotal)}
                   </p>
+                  {shippingFee > 0 && (
+                    <p className="text-xs opacity-60 mt-1">
+                      Includes ₹70 shipping fee
+                    </p>
+                  )}
                 </div>
                 {upiLoading ? (
                   <div
@@ -402,7 +413,7 @@ export default function CheckoutPage() {
                   <p className="font-semibold mb-1">⚠️ Important</p>
                   <p className="text-sm leading-relaxed">
                     Please pay exactly{" "}
-                    <strong>{formatPrice(totalAmount)}</strong>. If you
+                    <strong>{formatPrice(grandTotal)}</strong>. If you
                     accidentally paid the wrong amount, pay the remaining
                     balance and add both Transaction IDs below.
                   </p>
@@ -520,9 +531,25 @@ export default function CheckoutPage() {
                   </div>
                 ))}
               </div>
-              <div className="border-t mt-4 pt-4 flex justify-between font-bold">
-                <span>Total</span>
-                <span>{formatPrice(totalAmount)}</span>
+              <div className="border-t mt-4 pt-3 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span>{formatPrice(totalAmount)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Shipping</span>
+                  {shippingFee === 0 ? (
+                    <span className="text-green-600 font-semibold">
+                      FREE 🎉
+                    </span>
+                  ) : (
+                    <span>{formatPrice(shippingFee)}</span>
+                  )}
+                </div>
+                <div className="flex justify-between font-bold border-t pt-2">
+                  <span>Total</span>
+                  <span>{formatPrice(grandTotal)}</span>
+                </div>
               </div>
             </div>
           </div>

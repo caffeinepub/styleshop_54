@@ -4,6 +4,9 @@ import { useCart } from "../context/CartContext";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "./ui/sheet";
 
+const SHIPPING_THRESHOLD = 99900;
+const SHIPPING_FEE = 7000;
+
 function formatPrice(cents: number) {
   return `₹${(cents / 100).toFixed(2)}`;
 }
@@ -17,6 +20,12 @@ export default function CartSidebar({ open, onClose }: CartSidebarProps) {
   const { items, removeItem, updateQuantity, totalAmount, totalItems } =
     useCart();
   const navigate = useNavigate();
+
+  const shippingFee = totalAmount < SHIPPING_THRESHOLD ? SHIPPING_FEE : 0;
+  const grandTotal = totalAmount + shippingFee;
+  const amountNeededForFreeShipping = Math.ceil(
+    (SHIPPING_THRESHOLD - totalAmount) / 100,
+  );
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
@@ -116,9 +125,26 @@ export default function CartSidebar({ open, onClose }: CartSidebarProps) {
             </div>
 
             <div className="border-t pt-4 space-y-3">
-              <div className="flex justify-between font-semibold">
-                <span>Subtotal</span>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Subtotal</span>
                 <span>{formatPrice(totalAmount)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Shipping</span>
+                {shippingFee === 0 ? (
+                  <span className="text-green-600 font-semibold">FREE 🎉</span>
+                ) : (
+                  <span>{formatPrice(shippingFee)}</span>
+                )}
+              </div>
+              {shippingFee > 0 && (
+                <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">
+                  🛍️ Add ₹{amountNeededForFreeShipping} more for free shipping!
+                </p>
+              )}
+              <div className="flex justify-between font-bold border-t pt-2">
+                <span>Total</span>
+                <span>{formatPrice(grandTotal)}</span>
               </div>
               <Button
                 className="w-full"
