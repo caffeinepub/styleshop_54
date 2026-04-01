@@ -107,6 +107,7 @@ export interface _SERVICE {
     string
   >,
   'createOrder' : ActorMethod<[OrderType], bigint>,
+  'deleteAllOrders' : ActorMethod<[], undefined>,
   'deleteProduct' : ActorMethod<[bigint], undefined>,
   'getAllCustomers' : ActorMethod<[], Array<Customer>>,
   'getAllOrders' : ActorMethod<[], Array<OrderType>>,

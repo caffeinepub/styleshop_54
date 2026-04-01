@@ -5,7 +5,7 @@ import type { OrderType } from "../backend";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { useActor } from "../hooks/useActor";
-import { formatOrderId } from "../utils/orderId";
+import { decodeOrderId, formatOrderId } from "../utils/orderId";
 
 function statusColor(status: string) {
   switch (status) {
@@ -49,7 +49,16 @@ export default function TrackOrderPage() {
     setError("");
     setOrder(undefined);
     try {
-      const result = await actor.getOrderByIdAndPhone(BigInt(orderId), phone);
+      // Decode alphanumeric code (e.g. ZP4K2) back to numeric ID
+      const numericId = decodeOrderId(orderId.trim().toUpperCase());
+      if (numericId === null) {
+        setError(
+          "Order not found. Please check your Order ID and phone number.",
+        );
+        setLoading(false);
+        return;
+      }
+      const result = await actor.getOrderByIdAndPhone(BigInt(numericId), phone);
       setOrder(result);
       if (!result)
         setError(
@@ -76,7 +85,7 @@ export default function TrackOrderPage() {
           <div>
             <h1 className="text-2xl font-bold">Track Your Order</h1>
             <p className="text-muted-foreground text-sm">
-              Enter your Order ID and phone number
+              Enter your Order ID (e.g. ZP4K2) and phone number
             </p>
           </div>
         </div>
@@ -94,10 +103,10 @@ export default function TrackOrderPage() {
             <Input
               id="track-order-id"
               data-ocid="track.input"
-              type="number"
-              placeholder="Enter your Order ID"
+              type="text"
+              placeholder="e.g. ZP4K2"
               value={orderId}
-              onChange={(e) => setOrderId(e.target.value)}
+              onChange={(e) => setOrderId(e.target.value.toUpperCase())}
               required
             />
           </div>

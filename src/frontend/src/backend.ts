@@ -195,6 +195,7 @@ export interface backendInterface {
     claimAdminWithBackupCode(code: string): Promise<boolean>;
     createCheckoutSession(items: Array<ShoppingItem>, successUrl: string, cancelUrl: string): Promise<string>;
     createOrder(order: OrderType): Promise<bigint>;
+    deleteAllOrders(): Promise<void>;
     deleteProduct(id: bigint): Promise<void>;
     getAllCustomers(): Promise<Array<Customer>>;
     getAllOrders(): Promise<Array<OrderType>>;
@@ -309,6 +310,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.createOrder(arg0);
+            return result;
+        }
+    }
+    async deleteAllOrders(): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deleteAllOrders();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.deleteAllOrders();
             return result;
         }
     }

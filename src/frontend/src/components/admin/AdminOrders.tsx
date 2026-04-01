@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useActor } from "../../hooks/useActor";
 import { formatOrderId } from "../../utils/orderId";
+import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import {
   Select,
@@ -45,6 +46,7 @@ export default function AdminOrders() {
   const [trackingInputs, setTrackingInputs] = useState<Record<string, string>>(
     {},
   );
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const { data: rawOrders = [], isLoading } = useQuery({
     queryKey: ["admin-orders"],
@@ -71,162 +73,207 @@ export default function AdminOrders() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-orders"] }),
   });
 
+  const deleteAll = useMutation({
+    mutationFn: () => actor!.deleteAllOrders(),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-orders"] });
+      setConfirmDelete(false);
+    },
+  });
+
   function handleTrackingBlur(orderId: bigint, value: string) {
     updateTracking.mutate({ id: orderId, tracking: value });
   }
 
   if (isLoading)
     return <div className="text-muted-foreground">Loading orders...</div>;
-  if (orders.length === 0)
-    return (
-      <div data-ocid="admin.empty_state" className="text-muted-foreground">
-        No orders yet.
-      </div>
-    );
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
-        {orders.length} total orders
-      </p>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b">
-              <th className="text-left py-2 pr-4">Order ID</th>
-              <th className="text-left py-2 pr-4">Date</th>
-              <th className="text-left py-2 pr-4">Customer</th>
-              <th className="text-left py-2 pr-4">Phone</th>
-              <th className="text-left py-2 pr-4">Items</th>
-              <th className="text-left py-2 pr-4">Total</th>
-              <th className="text-left py-2 pr-4">UPI Txn ID</th>
-              <th className="text-left py-2 pr-4">Address</th>
-              <th className="text-left py-2 pr-4">Tracking</th>
-              <th className="text-left py-2">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {orders.map((order) => {
-              const idKey = order.id.toString();
-              const showTracking =
-                order.status === "Shipped" || order.status === "Delivered";
-              const orderNum = Number(order.orderNumber);
-              const friendlyId = formatOrderId(orderNum);
-              return (
-                <tr
-                  key={idKey}
-                  className="border-b hover:bg-muted/30 transition-colors"
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          {orders.length} total orders
+        </p>
+        {orders.length > 0 && (
+          <div className="flex items-center gap-2">
+            {confirmDelete ? (
+              <>
+                <span className="text-sm text-red-600 font-medium">
+                  Delete all {orders.length} orders? This cannot be undone.
+                </span>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => deleteAll.mutate()}
+                  disabled={deleteAll.isPending}
                 >
-                  <td className="py-3 pr-4 font-mono">
-                    <span className="font-semibold">{friendlyId}</span>
-                    <span className="text-muted-foreground text-xs ml-1">
-                      (#{orderNum})
-                    </span>
-                  </td>
-                  <td className="py-3 pr-4 whitespace-nowrap">
-                    {formatDate(order.createdAt)}
-                  </td>
-                  <td className="py-3 pr-4">
-                    <div className="font-medium">{order.customerName}</div>
-                    <div className="text-muted-foreground text-xs">
-                      {order.customerEmail}
-                    </div>
-                  </td>
-                  <td className="py-3 pr-4">{order.customerPhone}</td>
-                  <td className="py-3 pr-4">
-                    <div className="max-w-[200px]">
-                      {order.items.map((item) => (
-                        <div
-                          key={`${item.productId}-${item.size}`}
-                          className="text-xs"
-                        >
-                          {item.productName} x{item.quantity.toString()} (
-                          {item.size})
-                        </div>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="py-3 pr-4 font-semibold">
-                    {formatPrice(order.totalAmount)}
-                  </td>
-                  <td className="py-3 pr-4">
-                    <div className="text-xs font-mono max-w-[140px] break-all text-muted-foreground">
-                      {order.stripePaymentIntentId || (
-                        <span className="italic">Not provided</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-3 pr-4">
-                    <div className="text-xs max-w-[160px]">
-                      <div>{order.shippingStreet}</div>
-                      <div>
-                        {order.shippingCity}, {order.shippingState}{" "}
-                        {order.shippingZip}
-                      </div>
-                      <div>{order.shippingCountry}</div>
-                      {order.orderNotes && (
-                        <div className="text-muted-foreground mt-1 italic">
-                          {order.orderNotes}
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-3 pr-4">
-                    {showTracking ? (
-                      <Input
-                        className="h-8 w-32 text-xs"
-                        placeholder="Tracking #"
-                        value={
-                          trackingInputs[idKey] ?? order.trackingNumber ?? ""
-                        }
-                        onChange={(e) =>
-                          setTrackingInputs((prev) => ({
-                            ...prev,
-                            [idKey]: e.target.value,
-                          }))
-                        }
-                        onBlur={(e) =>
-                          handleTrackingBlur(order.id, e.target.value)
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter")
-                            handleTrackingBlur(
-                              order.id,
-                              (e.target as HTMLInputElement).value,
-                            );
-                        }}
-                      />
-                    ) : (
-                      <span className="text-xs text-muted-foreground">-</span>
-                    )}
-                  </td>
-                  <td className="py-3">
-                    <Select
-                      value={order.status}
-                      onValueChange={(val) =>
-                        updateStatus.mutate({ id: order.id, status: val })
-                      }
-                    >
-                      <SelectTrigger
-                        className={`w-32 h-8 text-xs ${statusBadge(order.status)}`}
-                      >
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {STATUSES.map((s) => (
-                          <SelectItem key={s} value={s}>
-                            {s}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                  {deleteAll.isPending ? "Deleting..." : "Yes, Delete All"}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setConfirmDelete(false)}
+                >
+                  Cancel
+                </Button>
+              </>
+            ) : (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setConfirmDelete(true)}
+              >
+                Delete All Orders
+              </Button>
+            )}
+          </div>
+        )}
       </div>
+
+      {orders.length === 0 ? (
+        <div data-ocid="admin.empty_state" className="text-muted-foreground">
+          No orders yet.
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left py-2 pr-4">Order ID</th>
+                <th className="text-left py-2 pr-4">Date</th>
+                <th className="text-left py-2 pr-4">Customer</th>
+                <th className="text-left py-2 pr-4">Phone</th>
+                <th className="text-left py-2 pr-4">Items</th>
+                <th className="text-left py-2 pr-4">Total</th>
+                <th className="text-left py-2 pr-4">UPI Txn ID</th>
+                <th className="text-left py-2 pr-4">Address</th>
+                <th className="text-left py-2 pr-4">Tracking</th>
+                <th className="text-left py-2">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {orders.map((order) => {
+                const idKey = order.id.toString();
+                const showTracking =
+                  order.status === "Shipped" || order.status === "Delivered";
+                const orderNum = Number(order.orderNumber);
+                const friendlyId = formatOrderId(orderNum);
+                return (
+                  <tr
+                    key={idKey}
+                    className="border-b hover:bg-muted/30 transition-colors"
+                  >
+                    <td className="py-3 pr-4 font-mono">
+                      <span className="font-semibold">{friendlyId}</span>
+                      <span className="text-muted-foreground text-xs ml-1">
+                        (#{orderNum})
+                      </span>
+                    </td>
+                    <td className="py-3 pr-4 whitespace-nowrap">
+                      {formatDate(order.createdAt)}
+                    </td>
+                    <td className="py-3 pr-4">
+                      <div className="font-medium">{order.customerName}</div>
+                      <div className="text-muted-foreground text-xs">
+                        {order.customerEmail}
+                      </div>
+                    </td>
+                    <td className="py-3 pr-4">{order.customerPhone}</td>
+                    <td className="py-3 pr-4">
+                      <div className="max-w-[200px]">
+                        {order.items.map((item) => (
+                          <div
+                            key={`${item.productId}-${item.size}`}
+                            className="text-xs"
+                          >
+                            {item.productName} x{item.quantity.toString()} (
+                            {item.size})
+                          </div>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="py-3 pr-4 font-semibold">
+                      {formatPrice(order.totalAmount)}
+                    </td>
+                    <td className="py-3 pr-4">
+                      <div className="text-xs font-mono max-w-[140px] break-all text-muted-foreground">
+                        {order.stripePaymentIntentId || (
+                          <span className="italic">Not provided</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-3 pr-4">
+                      <div className="text-xs max-w-[160px]">
+                        <div>{order.shippingStreet}</div>
+                        <div>
+                          {order.shippingCity}, {order.shippingState}{" "}
+                          {order.shippingZip}
+                        </div>
+                        <div>{order.shippingCountry}</div>
+                        {order.orderNotes && (
+                          <div className="text-muted-foreground mt-1 italic">
+                            {order.orderNotes}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-3 pr-4">
+                      {showTracking ? (
+                        <Input
+                          className="h-8 w-32 text-xs"
+                          placeholder="Tracking #"
+                          value={
+                            trackingInputs[idKey] ?? order.trackingNumber ?? ""
+                          }
+                          onChange={(e) =>
+                            setTrackingInputs((prev) => ({
+                              ...prev,
+                              [idKey]: e.target.value,
+                            }))
+                          }
+                          onBlur={(e) =>
+                            handleTrackingBlur(order.id, e.target.value)
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter")
+                              handleTrackingBlur(
+                                order.id,
+                                (e.target as HTMLInputElement).value,
+                              );
+                          }}
+                        />
+                      ) : (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      )}
+                    </td>
+                    <td className="py-3">
+                      <Select
+                        value={order.status}
+                        onValueChange={(val) =>
+                          updateStatus.mutate({ id: order.id, status: val })
+                        }
+                      >
+                        <SelectTrigger
+                          className={`w-32 h-8 text-xs ${statusBadge(order.status)}`}
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {STATUSES.map((s) => (
+                            <SelectItem key={s} value={s}>
+                              {s}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

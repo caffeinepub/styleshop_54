@@ -307,6 +307,16 @@ actor {
     orders.add(orderId, { existingOrder with trackingNumber });
   };
 
+  public shared ({ caller }) func deleteAllOrders() : async () {
+    if (not Authorization.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admins can delete orders");
+    };
+    let keys = orders.keys().toArray();
+    for (k in keys.values()) {
+      orders.remove(k);
+    };
+  };
+
   // ── Customer Functions ───────────────────────────────────────────────────────
   public query ({ caller }) func getAllCustomers() : async [Customer] {
     if (not Authorization.isAdmin(accessControlState, caller)) {
