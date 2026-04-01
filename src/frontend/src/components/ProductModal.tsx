@@ -1,7 +1,6 @@
 import { useState } from "react";
 import type { Product } from "../backend";
 import { useCart } from "../context/CartContext";
-import { getColorsForCategory } from "../utils/productColors";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
@@ -21,8 +20,6 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
   const [added, setAdded] = useState(false);
   const subcategory =
     (product as Product & { subcategory?: string }).subcategory ?? "";
-  const colors = getColorsForCategory(subcategory);
-  const [selectedColor, setSelectedColor] = useState(colors[0]?.name || "");
 
   const imgUrl =
     product.imageUrl && !product.imageUrl.startsWith("placeholder")
@@ -30,7 +27,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
       : `https://picsum.photos/seed/${product.id}/600/750`;
 
   const handleAdd = () => {
-    addItem(product, selectedSize, selectedColor);
+    addItem(product, selectedSize);
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
   };
@@ -87,33 +84,6 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
                     >
                       {s}
                     </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {colors.length > 0 && (
-              <div className="mt-4">
-                <p className="text-sm font-medium mb-2">
-                  Color:{" "}
-                  <span className="text-muted-foreground font-normal">
-                    {selectedColor}
-                  </span>
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {colors.map((c) => (
-                    <button
-                      type="button"
-                      key={c.name}
-                      title={c.name}
-                      onClick={() => setSelectedColor(c.name)}
-                      className={`w-8 h-8 rounded-full transition-all ${
-                        selectedColor === c.name
-                          ? "ring-2 ring-offset-2 ring-foreground scale-110 shadow-md"
-                          : "ring-1 ring-gray-400 hover:ring-2 hover:ring-foreground"
-                      }`}
-                      style={{ backgroundColor: c.hex }}
-                    />
                   ))}
                 </div>
               </div>

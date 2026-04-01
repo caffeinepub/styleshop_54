@@ -1,7 +1,6 @@
 import { useState } from "react";
 import type { Product } from "../backend";
 import { useCart } from "../context/CartContext";
-import { getColorsForCategory } from "../utils/productColors";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 
@@ -22,8 +21,6 @@ export default function ProductCard({
   const [selectedSize, setSelectedSize] = useState(product.sizes[0] || "");
   const subcategory =
     (product as Product & { subcategory?: string }).subcategory ?? "";
-  const colors = getColorsForCategory(subcategory);
-  const [selectedColor, setSelectedColor] = useState(colors[0]?.name || "");
 
   const imgUrl =
     product.imageUrl && !product.imageUrl.startsWith("placeholder")
@@ -91,33 +88,6 @@ export default function ProductCard({
           </div>
         )}
 
-        {colors.length > 0 && (
-          <div className="mt-2">
-            <p className="text-xs text-muted-foreground mb-1">
-              Color:{" "}
-              <span className="font-medium text-foreground">
-                {selectedColor}
-              </span>
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {colors.map((c) => (
-                <button
-                  type="button"
-                  key={c.name}
-                  title={c.name}
-                  onClick={() => setSelectedColor(c.name)}
-                  className={`w-6 h-6 rounded-full transition-all ${
-                    selectedColor === c.name
-                      ? "ring-2 ring-offset-1 ring-foreground scale-110 shadow-sm"
-                      : "ring-1 ring-gray-400 hover:ring-2 hover:ring-foreground"
-                  }`}
-                  style={{ backgroundColor: c.hex }}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
         <p className="text-xs text-muted-foreground mt-2">
           🚚 Delivery: 5–8 days
         </p>
@@ -125,7 +95,7 @@ export default function ProductCard({
         <Button
           className="w-full mt-2 text-xs h-8"
           disabled={!product.inStock}
-          onClick={() => addItem(product, selectedSize, selectedColor)}
+          onClick={() => addItem(product, selectedSize)}
         >
           {product.inStock ? "Add to Cart" : "Out of Stock"}
         </Button>
