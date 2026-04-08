@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useActor } from "../../hooks/useActor";
+import { hexForColor } from "../../utils/colorOptions";
 import { formatOrderId } from "../../utils/orderId";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -38,6 +39,19 @@ function statusBadge(status: string) {
     default:
       return "bg-muted text-muted-foreground";
   }
+}
+
+/** Parse size field: "XL | Color: Navy" => { size: "XL", color: "Navy" } */
+function parseSizeColor(raw: string): { size: string; color: string } {
+  const sep = " | Color: ";
+  const idx = raw.indexOf(sep);
+  if (idx !== -1) {
+    return {
+      size: raw.slice(0, idx).trim(),
+      color: raw.slice(idx + sep.length).trim(),
+    };
+  }
+  return { size: raw, color: "" };
 }
 
 export default function AdminOrders() {
@@ -180,16 +194,39 @@ export default function AdminOrders() {
                     </td>
                     <td className="py-3 pr-4">{order.customerPhone}</td>
                     <td className="py-3 pr-4">
-                      <div className="max-w-[200px]">
-                        {order.items.map((item) => (
-                          <div
-                            key={`${item.productId}-${item.size}`}
-                            className="text-xs"
-                          >
-                            {item.productName} x{item.quantity.toString()} (
-                            {item.size})
-                          </div>
-                        ))}
+                      <div className="max-w-[220px]">
+                        {order.items.map((item) => {
+                          const { size, color } = parseSizeColor(item.size);
+                          return (
+                            <div
+                              key={`${item.productId}-${item.size}`}
+                              className="text-xs mb-1"
+                            >
+                              <span className="font-medium">
+                                {item.productName}
+                              </span>{" "}
+                              x{item.quantity.toString()}
+                              <span className="text-muted-foreground">
+                                {" "}
+                                (Size: {size})
+                              </span>
+                              {color && (
+                                <span className="inline-flex items-center gap-1 ml-1">
+                                  <span
+                                    className="inline-block w-3 h-3 rounded-full border border-gray-400"
+                                    style={{
+                                      backgroundColor: hexForColor(color),
+                                    }}
+                                    title={color}
+                                  />
+                                  <span className="font-semibold text-foreground">
+                                    {color}
+                                  </span>
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </td>
                     <td className="py-3 pr-4 font-semibold">

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Product } from "../backend";
 import { useCart } from "../context/CartContext";
+import { getColorsForSubcategory } from "../utils/colorOptions";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
@@ -21,13 +22,18 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
   const subcategory =
     (product as Product & { subcategory?: string }).subcategory ?? "";
 
+  const colors = getColorsForSubcategory(subcategory);
+  const [selectedColor, setSelectedColor] = useState(
+    colors.length > 0 ? colors[0].name : "",
+  );
+
   const imgUrl =
     product.imageUrl && !product.imageUrl.startsWith("placeholder")
       ? product.imageUrl
       : `https://picsum.photos/seed/${product.id}/600/750`;
 
   const handleAdd = () => {
-    addItem(product, selectedSize);
+    addItem(product, selectedSize, selectedColor);
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
   };
@@ -84,6 +90,31 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
                     >
                       {s}
                     </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Color swatches */}
+            {colors.length > 0 && (
+              <div className="mt-4">
+                <p className="text-sm font-medium mb-2">
+                  Color: <span className="font-semibold">{selectedColor}</span>
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {colors.map((c) => (
+                    <button
+                      type="button"
+                      key={c.name}
+                      title={c.name}
+                      onClick={() => setSelectedColor(c.name)}
+                      className={`w-7 h-7 rounded-full border-2 transition-all ${
+                        selectedColor === c.name
+                          ? "border-foreground scale-110 shadow-md"
+                          : "border-gray-300 hover:border-gray-500"
+                      }`}
+                      style={{ backgroundColor: c.hex }}
+                    />
                   ))}
                 </div>
               </div>

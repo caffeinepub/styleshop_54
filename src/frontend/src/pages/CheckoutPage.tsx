@@ -10,6 +10,7 @@ import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { useCart } from "../context/CartContext";
 import { useActor } from "../hooks/useActor";
+import { hexForColor } from "../utils/colorOptions";
 
 const SHIPPING_THRESHOLD = 99900;
 const SHIPPING_FEE = 7000;
@@ -120,7 +121,10 @@ export default function CheckoutPage() {
           productName: i.product.name,
           quantity: BigInt(i.quantity),
           price: i.product.price,
-          size: i.selectedSize,
+          // Encode color into the size field so admin can see it without backend change
+          size: i.selectedColor
+            ? `${i.selectedSize} | Color: ${i.selectedColor}`
+            : i.selectedSize,
         })),
         totalAmount: BigInt(grandTotal),
         status: "Pending",
@@ -516,7 +520,7 @@ export default function CheckoutPage() {
               <div className="space-y-3">
                 {items.map((item) => (
                   <div
-                    key={`${item.product.id}-${item.selectedSize}`}
+                    key={`${item.product.id}-${item.selectedSize}-${item.selectedColor}`}
                     className="flex justify-between text-sm"
                   >
                     <span className="truncate mr-2">
@@ -524,6 +528,19 @@ export default function CheckoutPage() {
                       <span className="text-muted-foreground ml-1">
                         (Size: {item.selectedSize})
                       </span>
+                      {item.selectedColor && (
+                        <span className="flex items-center gap-1 mt-0.5">
+                          <span
+                            className="inline-block w-3 h-3 rounded-full border border-gray-300"
+                            style={{
+                              backgroundColor: hexForColor(item.selectedColor),
+                            }}
+                          />
+                          <span className="text-muted-foreground text-xs">
+                            {item.selectedColor}
+                          </span>
+                        </span>
+                      )}
                     </span>
                     <span className="font-medium shrink-0">
                       {formatPrice(Number(item.product.price) * item.quantity)}
